@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: northstar-discovery-service-configmap
+data:
+  discovery-server-url: "http://northstar-discovery-service-svc:8761/eureka/"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: northstar-discovery-service-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: northstar-discovery-service-deployment
+  template:
+    metadata:
+      labels:
+        app: northstar-discovery-service-deployment
+    spec:
+      containers:
+        - env:
+            - name: JAVA_OPTS
+              value: "-XX:TieredStopAtLevel=1 -noverify -Xms128m -Xmx512m -Xss4m -XX:ParallelGCThreads=1 -XX:ConcGCThreads=1 -Djava.util.concurrent.ForkJoinPool.common.parallelism=1"
+          image: northstar-discovery-service:latest
+          imagePullPolicy: IfNotPresent
+          name: northstar-discovery-service
+          ports:
+            - containerPort: 8761
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 800m
+              memory: 1024Mi
+            requests:
+              cpu: 400m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: northstar-discovery-service-svc
+spec:
+  selector:
+    app: northstar-discovery-service-deployment
+  ports:
+    - protocol: TCP
+      port: 8761
+      targetPort: 8761
+  type: ClusterIP
